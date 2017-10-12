@@ -155,21 +155,25 @@ ForgotPassword.prototype.postForgot = function(req, res, next) {
 
       // send email with forgot password link
       var mail = new Mail(config);
-      mail.forgot(usr.name, usr.email, token, function(e) {
-        if (e) {return next(e); }
+      let timeout = usr.accountLocked ? 60000 : 0
 
-        // emit event
-        that.emit('forgot::sent', usr, res);
-
-        // send only JSON when REST is active
-        if (config.rest) {return res.send(204); }
-
+      if (config.rest) {res.send(204); }
+      else {
         res.render(view, {
           title: 'Forgot password',
           basedir: req.app.get('views')
         });
-      });
+      }
 
+      setTimeout(() => {
+        mail.forgot(usr.name, usr.email, token, function(e) {
+          if (e) {return next(e); }
+
+          // emit event
+          that.emit('forgot::sent', usr, res);
+
+        });
+      }, timeout);
     });
 
   });
